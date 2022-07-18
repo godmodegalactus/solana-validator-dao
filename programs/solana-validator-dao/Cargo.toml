@@ -20,3 +20,7 @@ overflow-checks = true
 
 [dependencies]
 anchor-lang = "0.24.2"
+solana-program = "^1.9.6"
+spl-token = { version = "3.1.1", features = ["no-entrypoint"] }
+spl-governance = "2.2.4"
+anchor-spl = "0.24.2"
