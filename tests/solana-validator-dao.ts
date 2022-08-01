@@ -7,6 +7,7 @@ import {
   createMint,
   createAccount,
 } from "@solana/spl-token";
+import * as spl_token from "@solana/spl-token";
 import { BN } from "bn.js";
 import mlog from "mocha-logger"; 
 import { assert } from "chai";
@@ -19,129 +20,115 @@ describe("solana-validator-dao", () => {
   const governanceProgramId = new web3.PublicKey('GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw');
 
     // solana logger
-  let logsCallback = (logs: anchor.web3.Logs, context: anchor.web3.Context) => {
-    mlog.log( logs.logs.join("\n") )
-  };
-  const listner = connection.onLogs('all', logsCallback)
-
+  // let logsCallback = (logs: anchor.web3.Logs, context: anchor.web3.Context) => {
+  //   mlog.log( logs.logs.join("\n") )
+  // };
+  // const listner = connection.onLogs('all', logsCallback)
 
   const program = anchor.workspace.SolanaValidatorDao as Program<SolanaValidatorDao>;
   const owner = web3.Keypair.generate();
-  let mint : web3.PublicKey = null;
+  mlog.log("owner : " + owner.publicKey)
+  let communityMint : web3.PublicKey = null;
 
   it("Create a governance!", async () => {
     
-    await connection.confirmTransaction(await connection.requestAirdrop(owner.publicKey, 1000 * web3.LAMPORTS_PER_SOL));
+    await connection.confirmTransaction(await connection.requestAirdrop(owner.publicKey, 2 * web3.LAMPORTS_PER_SOL));
     
     const instructions: web3.TransactionInstruction[] = []
     const signers: web3.Keypair[] = []
     const _tokenAccount = web3.Keypair.generate();
-
-    mint = await createMint(
+    
+    mlog.log("creating community mint")
+    communityMint = await createMint(
       connection,
       owner,
       owner.publicKey,
       null,
-      6
+      6,
+      undefined,
+      {commitment:'confirmed'}
     );
-
-    signers.push(owner);
-
+    mlog.log("created community mint")
+    const mintData = await spl_token.getMint(connection, communityMint, 'confirmed');
+    
     const councilMint = await createMint(
       connection,
       owner,
       owner.publicKey,
       null,
-      6
+      6,
+      undefined,
+      {commitment:'confirmed'}
     );
 
-    // Explicitly request the version before making RPC calls to work around race conditions in resolving
-    // the version for RealmInfo
-    const programVersion = await governance.getGovernanceProgramVersion(
-      connection,
-      governanceProgramId,
-    )
+    signers.push(owner);
+    const programVersion = 2;
     mlog.log('program-version: ' + programVersion);
     let blockHash = await connection.getRecentBlockhash();
     mlog.log('block-hash: ' + blockHash.blockhash);
 
-    const tokenAccount = await createAccount(
-          connection,
-          owner,
-          mint,
-          owner.publicKey,
-          _tokenAccount,
-        );
-
-    const realmsArgs = new governance.CreateRealmArgs({
-      name: "TestRealms",
-      configArgs: new governance.RealmConfigArgs({
-        useCouncilMint: false,
-        minCommunityTokensToCreateGovernance: new anchor.BN(1000000),
-        communityMintMaxVoteWeightSource: new governance.MintMaxVoteWeightSource({ value: new anchor.BN(1000000)}),
-        useCommunityVoterWeightAddin: false,
-        useMaxCommunityVoterWeightAddin: false,
-      })
-    });
-
+    let mintMaxVoteWeightSource = new governance.MintMaxVoteWeightSource({ value: new anchor.BN(100_000_000)});
+    mintMaxVoteWeightSource.type = governance.MintMaxVoteWeightSourceType.SupplyFraction;
+    
     const realmAddress = await governance.withCreateRealm(
       instructions,
       governanceProgramId,
       programVersion,
       "Test",
       owner.publicKey,
-      mint,
+      communityMint,
       owner.publicKey,
-      undefined,
-      new governance.MintMaxVoteWeightSource({ value: new anchor.BN(1000000)}),
-      new anchor.BN(1000000),
+      councilMint,
+      mintMaxVoteWeightSource,
+      new anchor.BN(1_000_000),
       undefined,
       undefined,
     );
     mlog.log('realm address: ' + realmAddress);
-    mlog.log(instructions[0].programId);
-    mlog.log(instructions[0].keys.map(x=> x.pubkey).join(", "));
-    mlog.log(instructions[0].data.length)
 
-    
-    // const tokenOwnerRecord = await governance.withCreateTokenOwnerRecord(instructions,
-    //   governanceProgramId,
-    //   realmAddress,
-    //   owner.publicKey,
-    //   mint,
-    //   owner.publicKey);
+    const tokenOwnerRecord = await governance.withCreateTokenOwnerRecord(instructions,
+      governanceProgramId,
+      realmAddress,
+      owner.publicKey,
+      communityMint,
+      owner.publicKey);
+    mlog.log('token owner record: ' + tokenOwnerRecord);
 
-    // const config = new governance.GovernanceConfig({
-    //   voteThresholdPercentage: new governance.VoteThresholdPercentage({value: 1}),
-    //   minCommunityTokensToCreateProposal: new anchor.BN(100_000_000),
-    //   minInstructionHoldUpTime: 0,
-    //   maxVotingTime: 10,
-    //   voteTipping: null,
-    //   proposalCoolOffTime: null,
-    //   minCouncilTokensToCreateProposal: new anchor.BN(0),
-    // });
+    let votePercentage = new governance.VoteThresholdPercentage({value: 10});
+    votePercentage.type = governance.VoteThresholdPercentageType.YesVote;
+    votePercentage.value = 10;
 
-    // const governanceAddress = await governance.withCreateGovernance(
-    //       instructions,
-    //       governanceProgramId,
-    //       programVersion,
-    //       realmAddress,
-    //       undefined,
-    //       config,
-    //       tokenOwnerRecord,
-    //       owner.publicKey,
-    //       owner.publicKey,
-    //       null,
-    //     );
-    // mlog.log('governance address: ' + governanceAddress);
+    const config = new governance.GovernanceConfig({
+      voteThresholdPercentage: votePercentage,
+      minCommunityTokensToCreateProposal: new anchor.BN(1_000_000),
+      minInstructionHoldUpTime: 0,
+      maxVotingTime: 10,
+      voteTipping: governance.VoteTipping.Early,
+      proposalCoolOffTime: null,
+      minCouncilTokensToCreateProposal: new anchor.BN(1_000_000),
+    });
 
-    // const native_treasury =  await governance.withCreateNativeTreasury(
-    //     instructions,
-    //     governanceProgramId,
-    //     governanceAddress,
-    //     owner.publicKey
-    //   )
-    // mlog.log('native treasury address: ' + native_treasury);
+    const governanceAddress = await governance.withCreateGovernance(
+          instructions,
+          governanceProgramId,
+          programVersion,
+          realmAddress,
+          undefined,
+          config,
+          tokenOwnerRecord,
+          owner.publicKey,
+          owner.publicKey,
+          null,
+        );
+    mlog.log('governance address: ' + governanceAddress);
+
+    const native_treasury =  await governance.withCreateNativeTreasury(
+        instructions,
+        governanceProgramId,
+        governanceAddress,
+        owner.publicKey
+      )
+    mlog.log('native treasury address: ' + native_treasury);
 
     const transaction = new web3.Transaction()
     transaction.add(...instructions)
@@ -149,6 +136,6 @@ describe("solana-validator-dao", () => {
       transaction,
       signers,
     )
-    //connection.confirmTransaction(await connection.requestAirdrop(native_treasury, 1000 * web3.LAMPORTS_PER_SOL));
+    //connection.confirmTransaction(await connection.requestAirdrop(native_treasury, 2 * web3.LAMPORTS_PER_SOL));
   });
 });
