@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 mod instructions;
 use instructions::*;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("BC9n2UZZP4vebGeHuMAAnSzeRA5rv3hCoPFqsybLLpQv");
 
 const GOVERNANCE_PROGRAM_ID: &str = "GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw";
 
