@@ -10,9 +10,7 @@ import {
 import * as spl_token from "@solana/spl-token";
 import { BN } from "bn.js";
 import mlog from "mocha-logger";
-import { assert } from "chai";
-import { serialize } from 'borsh';
-import { withAddSignatory } from "@solana/spl-governance";
+import { sleep } from '@blockworks-foundation/mango-client'
 
 describe("solana-validator-dao", () => {
   // Configure the client to use the local cluster.
@@ -39,7 +37,6 @@ describe("solana-validator-dao", () => {
   let tokenOwnerRecord: web3.PublicKey = null;
   let governanceAddress: web3.PublicKey = null;
   let nativeTreasury: web3.PublicKey = null;
-
 
   it("Create a governance!", async () => {
 
@@ -70,6 +67,9 @@ describe("solana-validator-dao", () => {
       { commitment: 'confirmed' }
     );
     await spl_token.mintTo(connection, owner, communityMint, ownerCommunityAccount, owner, 100_000_000, undefined, { commitment: 'confirmed' });
+    
+    const communityMintData = await spl_token.getMint(connection, communityMint);
+    mlog.log(communityMintData.supply)
 
     const councilMint = await createMint(
       connection,
@@ -113,7 +113,7 @@ describe("solana-validator-dao", () => {
       owner.publicKey);
     mlog.log('token owner record: ' + tokenOwnerRecord);
 
-    let votePercentage = new governance.VoteThresholdPercentage({ value: 10 });
+    let votePercentage = new governance.VoteThresholdPercentage({ value: 1 });
     votePercentage.type = governance.VoteThresholdPercentageType.YesVote;
     votePercentage.value = 10;
 
@@ -121,7 +121,7 @@ describe("solana-validator-dao", () => {
       voteThresholdPercentage: votePercentage,
       minCommunityTokensToCreateProposal: new anchor.BN(1_000_000),
       minInstructionHoldUpTime: 0,
-      maxVotingTime: 10,
+      maxVotingTime: 2,
       voteTipping: governance.VoteTipping.Early,
       proposalCoolOffTime: null,
       minCouncilTokensToCreateProposal: new anchor.BN(1_000_000),
@@ -159,6 +159,9 @@ describe("solana-validator-dao", () => {
   });
 
   let proposalAddress :web3.PublicKey = null;
+  let transactionAddress: web3.PublicKey = null;
+  let instructionData: governance.InstructionData = null;
+
   it("Create proposals", async () => {
     const instructions: web3.TransactionInstruction[] = []
     const signers: web3.Keypair[] = []
@@ -175,7 +178,7 @@ describe("solana-validator-dao", () => {
       owner.publicKey,
       owner.publicKey,
       owner.publicKey,
-      new anchor.BN(90_000_000),
+      new anchor.BN(100_000_000),
     )
 
     mlog.log('creating proposal instruction ');
@@ -230,9 +233,9 @@ describe("solana-validator-dao", () => {
       });
     };
 
-    const instructionData = createInstructionData(instruction);
+    instructionData = createInstructionData(instruction);
     mlog.log('adding transaction');
-    await governance.withInsertTransaction(
+    transactionAddress = await governance.withInsertTransaction(
       instructions,
       governanceProgramId,
       programVersion,
@@ -242,7 +245,7 @@ describe("solana-validator-dao", () => {
       owner.publicKey,
       0,
       0,
-      1,
+      0,
       [instructionData],
       owner.publicKey,
     )
@@ -261,7 +264,7 @@ describe("solana-validator-dao", () => {
     signers.push(owner);
 
     mlog.log('signoff proposal')
-    governance.withSignOffProposal(
+    await governance.withSignOffProposal(
       instructions,
       governanceProgramId,
       programVersion,
@@ -272,7 +275,7 @@ describe("solana-validator-dao", () => {
       tokenOwnerRecord,
       tokenOwnerRecord,
     );
-    mlog.log('voting for proposal')
+    await mlog.log('voting for proposal')
     governance.withCastVote(
       instructions,
       governanceProgramId,
@@ -297,7 +300,68 @@ describe("solana-validator-dao", () => {
     await web3.sendAndConfirmTransaction(connection,
       transaction,
       signers,
+    )
+
+    mlog.log('wait for proposal voting to be finished');
+    await sleep(3000);
+  });
+
+  it("Finalizing the proposal", async () => {
+    const instructions: web3.TransactionInstruction[] = [];
+    const signers: web3.Keypair[] = []
+    signers.push(owner);
+
+    await governance.withFinalizeVote(
+      instructions,
+      governanceProgramId,
+      programVersion,
+      realmAddress,
+      governanceAddress,
+      proposalAddress,
+      tokenOwnerRecord,
+      communityMint,
     );
 
+    const transaction = new web3.Transaction()
+    transaction.add(...instructions)
+    await web3.sendAndConfirmTransaction(connection,
+      transaction,
+      signers,
+    );
+    mlog.log('proposal finalized');
+    const proposal = await governance.getGovernanceAccount(connection, proposalAddress, governance.Proposal);
+    const governanceData = await governance.getGovernance(connection, governanceAddress)
+    const proposalAccount = proposal.account;
+    mlog.log('---------proposal details----------------');
+    mlog.log('has time ended ' + proposalAccount.hasVoteTimeEnded(governanceData.account))
+    mlog.log('is finalized ' + proposalAccount.isVoteFinalized())
+    mlog.log('state ' + proposalAccount.state)
+  });
+  // executing the proposal
+  it("executing the proposal", async () => {
+    const instructions: web3.TransactionInstruction[] = [];
+    const signers: web3.Keypair[] = []
+    signers.push(owner);
+
+    await governance.withExecuteTransaction(
+      instructions,
+      governanceProgramId,
+      programVersion,
+      governanceAddress,
+      proposalAddress,
+      transactionAddress,
+      [instructionData]
+    );
+
+    const transaction = new web3.Transaction()
+    transaction.add(...instructions)
+    await web3.sendAndConfirmTransaction(connection,
+      transaction,
+      signers,
+    )
+  });
+
+  it("checking stake account", async () => {
+    web3.SOLANA_SCHEMA
   });
 });
