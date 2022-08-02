@@ -12,6 +12,7 @@ import { BN } from "bn.js";
 import mlog from "mocha-logger";
 import { assert } from "chai";
 import { serialize } from 'borsh';
+import { withAddSignatory } from "@solana/spl-governance";
 
 describe("solana-validator-dao", () => {
   // Configure the client to use the local cluster.
@@ -174,7 +175,7 @@ describe("solana-validator-dao", () => {
       owner.publicKey,
       owner.publicKey,
       owner.publicKey,
-      new anchor.BN(10_000_000),
+      new anchor.BN(90_000_000),
     )
 
     mlog.log('creating proposal instruction ');
@@ -254,6 +255,49 @@ describe("solana-validator-dao", () => {
     )
   });
 
-  it("Test initializing of stake for governance", async () => {
+  it("passing the proposal", async () => {
+    const instructions: web3.TransactionInstruction[] = [];
+    const signers: web3.Keypair[] = []
+    signers.push(owner);
+
+    mlog.log('signoff proposal')
+    governance.withSignOffProposal(
+      instructions,
+      governanceProgramId,
+      programVersion,
+      realmAddress,
+      governanceAddress,
+      proposalAddress,
+      owner.publicKey,
+      tokenOwnerRecord,
+      tokenOwnerRecord,
+    );
+    mlog.log('voting for proposal')
+    governance.withCastVote(
+      instructions,
+      governanceProgramId,
+      programVersion,
+      realmAddress,
+      governanceAddress,
+      proposalAddress,
+      tokenOwnerRecord,
+      tokenOwnerRecord,
+      owner.publicKey,
+      owner.publicKey,
+      new governance.Vote({
+        voteType: governance.VoteKind.Approve,
+        approveChoices: [new governance.VoteChoice({rank: 0,weightPercentage:100})],
+        deny: false,
+      }),
+      owner.publicKey,
+    )
+
+    const transaction = new web3.Transaction()
+    transaction.add(...instructions)
+    await web3.sendAndConfirmTransaction(connection,
+      transaction,
+      signers,
+    );
+
   });
 });
