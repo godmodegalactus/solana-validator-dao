@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 mod instructions;
 use instructions::*;
 
-declare_id!("BC9n2UZZP4vebGeHuMAAnSzeRA5rv3hCoPFqsybLLpQv");
+declare_id!("AwyKDr1Z5BfdvK3jX1UWopyjsJSV5cq4cuJpoYLofyEn");
 
 const GOVERNANCE_PROGRAM_ID: &str = "GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw";
 
@@ -18,8 +18,9 @@ pub mod solana_validator_dao {
         ctx: Context<InitalizeDAOStakeAccount>,
         lamports: u64,
         lockup_epoch_height: u64,
-        custodian: Option<Pubkey>,
+        custodian: Pubkey,
     ) -> Result<()> {
+        msg!("abc");
         let governance_id = &ctx.accounts.governance_id.to_account_info();
         let governance_program = &ctx.accounts.governance_program.to_account_info();
         let program_id = ctx.program_id;
@@ -50,17 +51,18 @@ pub mod solana_validator_dao {
             staker: native_treasury.key(),
             withdrawer: native_treasury.key(),
         };
-        let lockup = match custodian {
-            Some(c) => solana_program::stake::state::Lockup {
+        let lockup = if !custodian.eq(&Pubkey::default()) {
+            solana_program::stake::state::Lockup {
                 epoch: lockup_epoch_height,
                 unix_timestamp: 0,
-                custodian: c,
-            },
-            None => solana_program::stake::state::Lockup {
+                custodian: custodian,
+            }
+        }else { 
+            solana_program::stake::state::Lockup {
                 epoch: lockup_epoch_height,
                 unix_timestamp: 0,
                 custodian: Pubkey::default(),
-            },
+            }
         };
 
         let (dao_stake_account_pda, stake_account_bump) = Pubkey::find_program_address(
