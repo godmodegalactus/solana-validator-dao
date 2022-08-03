@@ -14,13 +14,11 @@ pub mod solana_validator_dao {
 
     use super::*;
 
-    pub fn initialize(
+    pub fn stake(
         ctx: Context<InitalizeDAOStakeAccount>,
+        seed: u8,
         lamports: u64,
-        lockup_epoch_height: u64,
-        custodian: Pubkey,
     ) -> Result<()> {
-        msg!("abc");
         let governance_id = &ctx.accounts.governance_id.to_account_info();
         let governance_program = &ctx.accounts.governance_program.to_account_info();
         let program_id = ctx.program_id;
@@ -28,6 +26,7 @@ pub mod solana_validator_dao {
 
         // check stake program id
         assert_eq!(stake_program.key(), solana_program::stake::program::ID);
+        assert_eq!(ctx.accounts.system_program.key(), solana_program::system_program::ID);
         // check governance program id
         assert_eq!(
             governance_program.key().to_string(),
@@ -51,36 +50,20 @@ pub mod solana_validator_dao {
             staker: native_treasury.key(),
             withdrawer: native_treasury.key(),
         };
-        let lockup = if !custodian.eq(&Pubkey::default()) {
-            solana_program::stake::state::Lockup {
-                epoch: lockup_epoch_height,
-                unix_timestamp: 0,
-                custodian: custodian,
-            }
-        }else { 
-            solana_program::stake::state::Lockup {
-                epoch: lockup_epoch_height,
-                unix_timestamp: 0,
-                custodian: Pubkey::default(),
-            }
-        };
+        let lockup = solana_program::stake::state::Lockup::default();
 
-        let (dao_stake_account_pda, stake_account_bump) = Pubkey::find_program_address(
-            &[
-                b"validator_dao_stake_account",
-                governance_id.key().as_ref(),
-                native_treasury.key().as_ref(),
-                governance_program.key().as_ref(),
-            ],
-            program_id,
-        );
-        let signer_seeds = &[
+        let program_seeds = &[
             b"validator_dao_stake_account",
             governance_id.key.as_ref(),
             native_treasury.key.as_ref(),
             governance_program.key.as_ref(),
-            &[stake_account_bump],
+            &[seed],
         ];
+
+        let (dao_stake_account_pda, stake_account_bump) = Pubkey::find_program_address(
+            program_seeds,
+            program_id,
+        );
 
         assert_eq!(dao_stake_account_pda, ctx.accounts.dao_stake_account.key());
         let stake_intialize_instructions = solana_program::stake::instruction::create_account(
@@ -93,6 +76,15 @@ pub mod solana_validator_dao {
         assert!(stake_intialize_instructions.len() == 2);
         let create_account_instruction = &stake_intialize_instructions[0];
         let initailize_stake_account_instruction = &stake_intialize_instructions[1];
+
+        let signer_seeds = &[
+            b"validator_dao_stake_account",
+            governance_id.key.as_ref(),
+            native_treasury.key.as_ref(),
+            governance_program.key.as_ref(),
+            &[seed],
+            &[stake_account_bump],
+        ];
         invoke_signed(
             create_account_instruction,
             &[
@@ -109,6 +101,16 @@ pub mod solana_validator_dao {
                 ctx.accounts.rent_program.to_account_info(),
             ],
         )?;
+
+        let delegate_instruction = solana_program::stake::instruction::delegate_stake(&dao_stake_account_pda, native_treasury.key, ctx.accounts.validator_vote_key.key);
+        invoke(&delegate_instruction, &[
+            ctx.accounts.dao_stake_account.to_account_info().clone(),
+            ctx.accounts.validator_vote_key.clone(),
+            ctx.accounts.clock_program.to_account_info().clone(),
+            ctx.accounts.stake_history.to_account_info().clone(),
+            ctx.accounts.stake_config.clone(),
+            ctx.accounts.governance_native_treasury_account.to_account_info().clone()
+        ])?;
         Ok(())
     }
 }
