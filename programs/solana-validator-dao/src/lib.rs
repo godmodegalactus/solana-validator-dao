@@ -27,6 +27,10 @@ pub mod solana_validator_dao {
         // check stake program id
         assert_eq!(stake_program.key(), solana_program::stake::program::ID);
         assert_eq!(ctx.accounts.system_program.key(), solana_program::system_program::ID);
+        assert_eq!(ctx.accounts.clock_program.key(),solana_program::sysvar::clock::id());
+        assert_eq!(ctx.accounts.rent_program.key(),solana_program::sysvar::rent::id());
+        assert_eq!(ctx.accounts.stake_history.key(),solana_program::sysvar::stake_history::id());
+        assert_eq!(ctx.accounts.stake_config.key(),solana_program::stake::config::id());
         // check governance program id
         assert_eq!(
             governance_program.key().to_string(),
@@ -46,10 +50,12 @@ pub mod solana_validator_dao {
                 governance_id.key,
             )
         );
+
         let autorized = solana_program::stake::state::Authorized {
             staker: native_treasury.key(),
             withdrawer: native_treasury.key(),
         };
+
         let lockup = solana_program::stake::state::Lockup::default();
 
         let program_seeds = &[
@@ -57,6 +63,7 @@ pub mod solana_validator_dao {
             governance_id.key.as_ref(),
             native_treasury.key.as_ref(),
             governance_program.key.as_ref(),
+            ctx.accounts.validator_vote_key.key.as_ref(),
             &[seed],
         ];
 
@@ -82,6 +89,7 @@ pub mod solana_validator_dao {
             governance_id.key.as_ref(),
             native_treasury.key.as_ref(),
             governance_program.key.as_ref(),
+            ctx.accounts.validator_vote_key.key.as_ref(),
             &[seed],
             &[stake_account_bump],
         ];

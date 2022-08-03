@@ -10,7 +10,12 @@ pub struct InitalizeDAOStakeAccount<'info> {
     pub governance_native_treasury_account: Signer<'info>,
     /// CHECK: stake account created for dao
     #[account(mut,
-        seeds = [b"validator_dao_stake_account", governance_id.key().as_ref(), governance_native_treasury_account.key().as_ref(), governance_program.key().as_ref(), &[seed]],
+        seeds = [b"validator_dao_stake_account", 
+            governance_id.key().as_ref(), 
+            governance_native_treasury_account.key().as_ref(), 
+            governance_program.key().as_ref(),
+            validator_vote_key.key().as_ref(),
+            &[seed]],
         bump,
     )]
     pub dao_stake_account: AccountInfo<'info>,

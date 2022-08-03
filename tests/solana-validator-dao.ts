@@ -204,7 +204,16 @@ describe("solana-validator-dao", () => {
     let ourValidator = validators.current.at(0);
 
     mlog.log('building tranction');
-    const [daoStakeAccount, _bump] = await web3.PublicKey.findProgramAddress([Buffer.from("validator_dao_stake_account"), governanceAddress.toBuffer(), nativeTreasury.toBuffer(), governanceProgramId.toBuffer(), new Uint8Array([0])], program.programId);
+    const [daoStakeAccount, _bump] = await web3.PublicKey.findProgramAddress(
+      [ 
+        Buffer.from("validator_dao_stake_account"), 
+        governanceAddress.toBuffer(), 
+        nativeTreasury.toBuffer(), 
+        governanceProgramId.toBuffer(), 
+        new web3.PublicKey(ourValidator.votePubkey).toBuffer(), 
+        new Uint8Array([0])
+      ], 
+      program.programId);
     const instruction = await program
     .methods
     .stake(0, new anchor.BN(1000_000_000))
@@ -222,6 +231,7 @@ describe("solana-validator-dao", () => {
         stakeProgram: web3.StakeProgram.programId,
         systemProgram: web3.SystemProgram.programId,
         rentProgram: web3.SYSVAR_RENT_PUBKEY,
+        tokenProgram: spl_token.TOKEN_PROGRAM_ID,
       }
     ).instruction();
 
