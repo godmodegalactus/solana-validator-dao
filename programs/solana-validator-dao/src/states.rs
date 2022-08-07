@@ -41,7 +41,7 @@ pub struct ValidatorProvider {
     pub review_count: u32,
     pub serving_governance_count: u32, // how many governances provider is serving
     pub name: [u8; 128],
-    pub description: [u8; 2048],
+    pub description: [u8; 1024],
     pub payment_mint: Pubkey,
     pub reserved: [u8; 256],
 }

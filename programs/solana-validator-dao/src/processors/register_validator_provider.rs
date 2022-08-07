@@ -11,6 +11,7 @@ pub fn process(
     name: String,
     description: String,
 ) -> Result<()> {
+    msg!("registering a validator provider");
     if name.len() > 128 {
         return Err(ValidatorDaoErrors::NameTooLarge.into());
     }
@@ -18,7 +19,7 @@ pub fn process(
     if description.len() > 2048 {
         return Err(ValidatorDaoErrors::DescriptionTooLarge.into());
     }
-    let validator_provider_data = &mut ctx.accounts.validator_provider;
+    let validator_provider_data = &mut ctx.accounts.provider_data;
     validator_provider_data.meta_data = Metadata {
         datatype: Datatype::ValidatorProvider,
         is_initialized: true,

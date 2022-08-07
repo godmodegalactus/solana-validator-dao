@@ -4,7 +4,7 @@ use crate::*;
 use anchor_spl::token::Mint;
 use states::*;
 const VALIDATOR_DAO_STAKE_ACCOUNT_SEEDS : &[u8] = b"validator_dao_stake_account";
-const VALIDATOR_PROVIDE_SEEDS : &[u8] = b"validator_provider";
+const VALIDATOR_PROVIDER_SEEDS : &[u8] = b"validator_provider";
 
 #[derive(Accounts)]
 #[instruction(seed : u8)]
@@ -53,12 +53,12 @@ pub struct RegisterValidatorServiceProvider<'info>{
 
     #[account(
         init,
-        seeds = [VALIDATOR_PROVIDE_SEEDS, owner.key().as_ref()],
+        seeds = [VALIDATOR_PROVIDER_SEEDS, owner.key().as_ref()],
         bump,
         space = 8 + size_of::<ValidatorProvider>(),
         payer = owner,
     )]
-    pub validator_provider : Box<Account<'info, ValidatorProvider>>,
+    pub provider_data : Box<Account<'info, ValidatorProvider>>,
 
     pub payment_mint : Box<Account<'info, Mint>>,
 
