@@ -1,4 +1,10 @@
+use std::mem::size_of;
+
 use crate::*;
+use anchor_spl::token::Mint;
+use states::*;
+const VALIDATOR_DAO_STAKE_ACCOUNT_SEEDS : &[u8] = b"validator_dao_stake_account";
+const VALIDATOR_PROVIDE_SEEDS : &[u8] = b"validator_provider";
 
 #[derive(Accounts)]
 #[instruction(seed : u8)]
@@ -10,7 +16,7 @@ pub struct InitalizeDAOStakeAccount<'info> {
     pub governance_native_treasury_account: Signer<'info>,
     /// CHECK: stake account created for dao
     #[account(mut,
-        seeds = [b"validator_dao_stake_account", 
+        seeds = [VALIDATOR_DAO_STAKE_ACCOUNT_SEEDS, 
             governance_id.key().as_ref(), 
             governance_native_treasury_account.key().as_ref(), 
             governance_program.key().as_ref(),
@@ -38,4 +44,24 @@ pub struct InitalizeDAOStakeAccount<'info> {
     pub clock_program: Sysvar<'info, Clock>,
     // stake history
     pub stake_history: Sysvar<'info, StakeHistory>,
+}
+
+#[derive(Accounts)]
+pub struct RegisterValidatorServiceProvider<'info>{
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
+    #[account(
+        init,
+        seeds = [VALIDATOR_PROVIDE_SEEDS, owner.key().as_ref()],
+        bump,
+        space = 8 + size_of::<ValidatorProvider>(),
+        payer = owner,
+    )]
+    pub validator_provider : Box<Account<'info, ValidatorProvider>>,
+
+    pub payment_mint : Box<Account<'info, Mint>>,
+
+    // system program
+    pub system_program: Program<'info, System>,
 }
