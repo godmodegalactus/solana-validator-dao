@@ -29,4 +29,10 @@ pub mod solana_validator_dao {
     ) -> Result<()> {
         processors::register_validator_provider::process(ctx, services, name, description)
     }
+
+    pub fn add_registered_provider_to_governance(
+        ctx: Context<AddRegisteredProviderToGovernance>,
+    ) -> Result<()> {
+        processors::add_registered_provider_to_governance::process(ctx)
+    }
 }

@@ -5,6 +5,7 @@ use anchor_spl::token::Mint;
 use states::*;
 const VALIDATOR_DAO_STAKE_ACCOUNT_SEEDS : &[u8] = b"validator_dao_stake_account";
 const VALIDATOR_PROVIDER_SEEDS : &[u8] = b"validator_provider";
+const GOVERNANCE_PROVIDER_SEEDS : &[u8] = b"governance_provider";
 
 #[derive(Accounts)]
 #[instruction(seed : u8)]
@@ -55,7 +56,7 @@ pub struct RegisterValidatorServiceProvider<'info>{
         init,
         seeds = [VALIDATOR_PROVIDER_SEEDS, owner.key().as_ref()],
         bump,
-        space = 8 + size_of::<ValidatorProvider>(),
+        space = 8 +  size_of::<ValidatorProvider>(),
         payer = owner,
     )]
     pub provider_data : Box<Account<'info, ValidatorProvider>>,
@@ -64,4 +65,28 @@ pub struct RegisterValidatorServiceProvider<'info>{
 
     // system program
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct AddRegisteredProviderToGovernance<'info> {
+    /// CHECK: governance ai
+    #[account()]
+    pub governance_ai : AccountInfo<'info>,
+    // signer for governance / should govenernance native treasury
+    #[account(mut)]
+    pub governance_native_treasury : Signer<'info>,
+    // provider data
+    pub provider_data: Box<Account<'info, ValidatorProvider>>,
+
+    #[account(
+        init,
+        seeds = [GOVERNANCE_PROVIDER_SEEDS, governance_ai.key().as_ref(), provider_data.key().as_ref()],
+        bump,
+        space = 8 + size_of::<GovernaceProvider>(),
+        payer = governance_native_treasury,
+    )]
+    pub governance_provider_data : Box<Account<'info, GovernaceProvider>>,
+    // system program
+    pub system_program: Program<'info, System>,
+    pub clock : Sysvar<'info, Clock>,
 }

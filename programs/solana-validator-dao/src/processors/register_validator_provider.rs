@@ -16,7 +16,7 @@ pub fn process(
         return Err(ValidatorDaoErrors::NameTooLarge.into());
     }
 
-    if description.len() > 2048 {
+    if description.len() > 1024 {
         return Err(ValidatorDaoErrors::DescriptionTooLarge.into());
     }
     let validator_provider_data = &mut ctx.accounts.provider_data;
@@ -30,10 +30,9 @@ pub fn process(
     validator_provider_data.rating = 0.0;
     validator_provider_data.review_count = 0;
     validator_provider_data.serving_governance_count = 0;
+    validator_provider_data.payment_mint = ctx.accounts.payment_mint.key();
     validator_provider_data.name[..name.len()].clone_from_slice(name.as_bytes());
     validator_provider_data.description[..description.len()]
         .clone_from_slice(description.as_bytes());
-
-    validator_provider_data.payment_mint = ctx.accounts.payment_mint.key();
     Ok(())
 }

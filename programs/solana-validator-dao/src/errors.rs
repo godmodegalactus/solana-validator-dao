@@ -6,6 +6,8 @@ pub enum ValidatorDaoErrors {
     NameTooLarge,
     #[msg("Description too large")]
     DescriptionTooLarge,
+    #[msg("Governance pid not found")]
+    GovernancePidProblem,
     #[msg("default")]
     Default,
 }

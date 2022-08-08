@@ -36,13 +36,13 @@ pub struct Metadata {
 pub struct ValidatorProvider {
     pub meta_data: Metadata,
     pub owner: Pubkey,
+    pub payment_mint: Pubkey,
     pub services: u64,
     pub rating: f32,
     pub review_count: u32,
     pub serving_governance_count: u32, // how many governances provider is serving
     pub name: [u8; 128],
     pub description: [u8; 1024],
-    pub payment_mint: Pubkey,
     pub reserved: [u8; 256],
 }
 
