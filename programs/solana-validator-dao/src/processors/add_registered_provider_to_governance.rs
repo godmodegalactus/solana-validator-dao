@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::{states::Metadata, *};
 
 use instructions::AddRegisteredProviderToGovernance;
@@ -7,18 +5,9 @@ use spl_governance::state::governance;
 use spl_governance::state::native_treasury;
 
 pub fn process(ctx: Context<AddRegisteredProviderToGovernance>) -> Result<()> {
-    let governace_pid_res = solana_program::pubkey::Pubkey::from_str(GOVERNANCE_PROGRAM_ID);
-    let governance_pid = match governace_pid_res {
-        Ok(x) => x,
-        Err(_) => Pubkey::default(),
-    };
-    if governance_pid.eq(&Pubkey::default()) {
-        return Err(errors::ValidatorDaoErrors::GovernancePidProblem.into());
-    }
-
-    governance::assert_is_valid_governance(&governance_pid, &ctx.accounts.governance_ai)?;
+    governance::assert_is_valid_governance(&GOVERNANCE_PROGRAM_ID, &ctx.accounts.governance_ai)?;
     let native_treasury_address = native_treasury::get_native_treasury_address(
-        &governance_pid,
+        &GOVERNANCE_PROGRAM_ID,
         ctx.accounts.governance_ai.key,
     );
 

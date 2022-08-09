@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use anchor_spl::*;
 
 const PROVIDES_BUYING_AND_SETUP_OF_VALIDATOR: u64 = 1;
 const PROVIDES_ADMIN_SERVICES_FOR_VALIDATOR: u64 = 1 << 2;
@@ -47,7 +46,7 @@ pub struct ValidatorProvider {
 }
 
 #[account()]
-pub struct GovernaceProvider {
+pub struct GovernanceProvider {
     pub meta_data: Metadata,
     pub governance_id: Pubkey,
     pub validator_provider: Pubkey,
@@ -57,7 +56,7 @@ pub struct GovernaceProvider {
 }
 
 #[account()]
-pub struct ValidatorContract {
+pub struct GovernanceContract {
     pub meta_data: Metadata,
     pub governance_id: Pubkey,
     pub contract_creator: Pubkey,
@@ -72,5 +71,24 @@ pub struct ValidatorContract {
     pub payment_mint: Pubkey,
     pub dao_payment_account: Pubkey,
     pub has_signed_by_provider: bool,
-    pub escrow_for_holding_initial_payment: Pubkey,
+}
+
+impl ValidatorProvider {
+    pub fn is_valid(&self) -> bool {
+        self.meta_data.datatype == Datatype::ValidatorProvider
+            && self.meta_data.is_initialized == true
+    }
+}
+
+impl GovernanceProvider {
+    pub fn is_valid(&self) -> bool {
+        self.meta_data.datatype == Datatype::GovernaceProvider
+            && self.meta_data.is_initialized == true
+    }
+}
+
+impl GovernanceContract {
+    pub fn is_valid(&self) -> bool {
+        self.meta_data.datatype == Datatype::Contract && self.meta_data.is_initialized == true
+    }
 }

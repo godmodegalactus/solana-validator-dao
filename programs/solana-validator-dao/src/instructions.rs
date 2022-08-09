@@ -1,11 +1,12 @@
 use std::mem::size_of;
 
 use crate::*;
-use anchor_spl::token::Mint;
+use anchor_spl::token::{Mint, TokenAccount};
 use states::*;
 const VALIDATOR_DAO_STAKE_ACCOUNT_SEEDS : &[u8] = b"validator_dao_stake_account";
 const VALIDATOR_PROVIDER_SEEDS : &[u8] = b"validator_provider";
 const GOVERNANCE_PROVIDER_SEEDS : &[u8] = b"governance_provider";
+const GOVERNANCE_CONTRACT_SEEDS : &[u8] = b"governance_contract";
 
 #[derive(Accounts)]
 #[instruction(seed : u8)]
@@ -70,23 +71,75 @@ pub struct RegisterValidatorServiceProvider<'info>{
 #[derive(Accounts)]
 pub struct AddRegisteredProviderToGovernance<'info> {
     /// CHECK: governance ai
-    #[account()]
+    #[account(
+        constraint = governance_ai.owner.eq( &GOVERNANCE_PROGRAM_ID ),
+    )]
     pub governance_ai : AccountInfo<'info>,
     // signer for governance / should govenernance native treasury
     #[account(mut)]
     pub governance_native_treasury : Signer<'info>,
     // provider data
+    #[account(
+        mut,
+        constraint = provider_data.owner == *program_id,
+        constraint = provider_data.is_valid()
+    )]
     pub provider_data: Box<Account<'info, ValidatorProvider>>,
 
     #[account(
         init,
         seeds = [GOVERNANCE_PROVIDER_SEEDS, governance_ai.key().as_ref(), provider_data.key().as_ref()],
         bump,
-        space = 8 + size_of::<GovernaceProvider>(),
+        space = 8 + size_of::<GovernanceProvider>(),
         payer = governance_native_treasury,
     )]
-    pub governance_provider_data : Box<Account<'info, GovernaceProvider>>,
+    pub governance_provider_data : Box<Account<'info, GovernanceProvider>>,
     // system program
     pub system_program: Program<'info, System>,
     pub clock : Sysvar<'info, Clock>,
+}
+
+#[derive(Accounts)]
+pub struct CreateGovernanceContract<'info> {
+    /// CHECK: governance ai / will be checked for valid governance
+    #[account(
+        constraint = governance_ai.owner.eq( &GOVERNANCE_PROGRAM_ID)
+    )]
+    pub governance_ai : AccountInfo<'info>,
+
+    #[account(
+        mut,
+        constraint = provider_data.owner == *program_id,
+        constraint = provider_data.is_valid()
+    )]
+    pub provider_data: Box<Account<'info, ValidatorProvider>>,
+
+    #[account(mut,
+        seeds = [GOVERNANCE_PROVIDER_SEEDS, governance_ai.key().as_ref(), provider_data.key().as_ref()],
+        bump,
+        constraint = governance_provider_data.to_account_info().owner == program_id,
+        constraint = governance_provider_data.is_valid()
+    )]
+    pub governance_provider_data : Box<Account<'info, GovernanceProvider>>,
+
+    #[account(
+        init,
+        seeds = [GOVERNANCE_CONTRACT_SEEDS, governance_ai.key().as_ref(), provider_data.key().as_ref(), governance_provider_data.key().as_ref()],
+        bump,
+        space = 8 + size_of::<GovernanceContract>(),
+        payer = payer,
+    )]
+    pub governance_contract : Box<Account<'info, GovernanceContract>>,
+
+    #[account()]
+    pub payment_mint : Box<Account<'info, Mint>>,
+
+    #[account(
+        constraint = token_account.mint == payment_mint.key(),
+    )]
+    pub token_account : Box<Account<'info, TokenAccount>>,
+
+    #[account(mut)]
+    pub payer : Signer<'info>,
+    pub system_program: Program<'info, System>,
 }

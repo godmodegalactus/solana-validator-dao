@@ -231,7 +231,6 @@ describe("solana-validator-dao", () => {
         stakeProgram: web3.StakeProgram.programId,
         systemProgram: web3.SystemProgram.programId,
         rentProgram: web3.SYSVAR_RENT_PUBKEY,
-        tokenProgram: spl_token.TOKEN_PROGRAM_ID,
       }
     ).instruction();
 

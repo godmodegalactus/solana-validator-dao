@@ -13,6 +13,7 @@ import mlog from "mocha-logger";
 import { sleep } from '@blockworks-foundation/mango-client'
 import { assert } from "chai";
 import {TextDecoder} from 'text-encoding'
+import _ from "lodash";
 
 describe("register-validator-provider", () => {
     const provider = anchor.AnchorProvider.env();
@@ -49,18 +50,19 @@ describe("register-validator-provider", () => {
         let _bump = 0;
         [providerPDA, _bump] = await web3.PublicKey.findProgramAddress([Buffer.from("validator_provider"), validatorProvider.publicKey.toBuffer()], program.programId)
         
-        await program.methods.registerValidatorProvider( 
+        const tx = await program.methods.registerValidatorProvider( 
             new anchor.BN(15), 
             "Orion validators", 
             "We can build and optimise a validator for solana mainnet, our validators are million times faster than any other provider"
         )
         .accounts({
             owner: validatorProvider.publicKey,
-            paymentMint: paymentMint,
+            paymentMint,
             providerData: providerPDA,
             systemProgram: web3.SystemProgram.programId,
         })
         .signers([validatorProvider]).rpc();
+        connection.confirmTransaction(tx);
     });
 
     it( "Verify data", async () => {
@@ -71,15 +73,17 @@ describe("register-validator-provider", () => {
     
         const textdecoder = new TextDecoder('utf-8')
         const instance : ValidatorProvider = await program.account.validatorProvider.fetch(providerPDA);
-        const metaData : Metadata = instance.metaData;
+        //const metaData : Metadata = instance.metaData;
         const name = instance.name.splice(0, instance.name.indexOf(0)).map(x=> String.fromCharCode(x)).join("");
         const desc = instance.description.splice(0, instance.description.indexOf(0)).map(x=> String.fromCharCode(x)).join("")
-        
-        assert(instance.owner.equals(validatorProvider.publicKey));
-        assert(instance.reviewCount == 0)
-        assert(instance.rating == 0.0)
-        assert(instance.paymentMint.equals(paymentMint))
-        assert(metaData.isInitialized = true)
+        mlog.log(instance.paymentMint);
+        mlog.log(paymentMint);
+        assert(instance.owner.equals(validatorProvider.publicKey), "owner should be set");
+        assert(instance.reviewCount == 0, "review count should be 0")
+        assert(instance.rating == 0.0, "rating should be 0")
+        assert(instance.paymentMint.equals(paymentMint), "payment mint should be set")
+        //assert(metaData.isInitialized = true, "metadata should be initialized")
+        //assert(_.isEqual(metaData.dataType, {validatorProvider:{}}))
         assert( name == "Orion validators");
         assert( desc == "We can build and optimise a validator for solana mainnet, our validators are million times faster than any other provider");
     } )

@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 mod instructions;
 use instructions::*;
+use solana_program::pubkey;
 
 mod processors;
 
@@ -10,7 +11,7 @@ mod states;
 
 declare_id!("AwyKDr1Z5BfdvK3jX1UWopyjsJSV5cq4cuJpoYLofyEn");
 
-const GOVERNANCE_PROGRAM_ID: &str = "GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw";
+const GOVERNANCE_PROGRAM_ID: Pubkey = pubkey!("GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw");
 
 #[program]
 pub mod solana_validator_dao {
@@ -34,5 +35,25 @@ pub mod solana_validator_dao {
         ctx: Context<AddRegisteredProviderToGovernance>,
     ) -> Result<()> {
         processors::add_registered_provider_to_governance::process(ctx)
+    }
+
+    pub fn create_governance_contract(
+        ctx: Context<CreateGovernanceContract>,
+        services: u64,
+        contract_start_unix_timestamp: u64,
+        contract_end_unix_timestamp: u64,
+        initial_amount: u64,
+        recurring_amount: u64,
+        periodicity: states::PaymentPeriodicity,
+    ) -> Result<()> {
+        processors::create_governance_contract::process(
+            ctx,
+            services,
+            contract_start_unix_timestamp,
+            contract_end_unix_timestamp,
+            initial_amount,
+            recurring_amount,
+            periodicity,
+        )
     }
 }
