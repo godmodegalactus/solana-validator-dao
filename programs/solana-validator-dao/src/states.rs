@@ -62,6 +62,7 @@ pub struct GovernanceContract {
     pub contract_creator: Pubkey,
     pub validator_provider: Pubkey,
     pub validator_provider_owner: Pubkey,
+    pub provider_token_account: Pubkey,
     pub services_to_be_provided: u64,
     pub contract_start_timestamp: u64,
     pub contract_end_timestamp: u64,
@@ -71,6 +72,8 @@ pub struct GovernanceContract {
     pub payment_mint: Pubkey,
     pub dao_payment_account: Pubkey,
     pub has_signed_by_provider: bool,
+    pub executed: bool,
+    pub reserved: [u8; 256],
 }
 
 impl ValidatorProvider {

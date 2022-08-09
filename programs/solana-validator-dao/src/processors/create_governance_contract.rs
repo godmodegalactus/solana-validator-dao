@@ -36,6 +36,10 @@ pub fn process(
     contract.periodicity = periodicity;
     contract.payment_mint = ctx.accounts.payment_mint.key();
     contract.dao_payment_account = ctx.accounts.token_account.key();
+    contract.provider_token_account = ctx.accounts.providers_token_account.key();
+    contract.executed = false;
+
+    ctx.accounts.governance_provider_data.contract_count += 1;
 
     // if the contract creater is provider then sign the contract automatically
     contract.has_signed_by_provider = if ctx

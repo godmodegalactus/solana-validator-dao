@@ -39,6 +39,7 @@ pub mod solana_validator_dao {
 
     pub fn create_governance_contract(
         ctx: Context<CreateGovernanceContract>,
+        _contract_seed: u64,
         services: u64,
         contract_start_unix_timestamp: u64,
         contract_end_unix_timestamp: u64,
@@ -55,5 +56,9 @@ pub mod solana_validator_dao {
             recurring_amount,
             periodicity,
         )
+    }
+
+    pub fn execute_governance_contract(ctx: Context<ExecuteContract>) -> Result<()> {
+        processors::execute_contract::process(ctx)
     }
 }

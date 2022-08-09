@@ -6,8 +6,10 @@ pub enum ValidatorDaoErrors {
     NameTooLarge,
     #[msg("Description too large")]
     DescriptionTooLarge,
-    #[msg("Governance pid not found")]
-    GovernancePidProblem,
+    #[msg("Contract has not started yet")]
+    ContractNotYetStarted,
+    #[msg("Contract not yet signed by the provider")]
+    ContractNotSignedByProvider,
     #[msg("default")]
     Default,
 }

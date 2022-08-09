@@ -27,6 +27,7 @@ pub fn process(ctx: Context<AddRegisteredProviderToGovernance>) -> Result<()> {
     governance_provider_data.validator_provider_owner = ctx.accounts.provider_data.owner.key();
     governance_provider_data.added_timestamp = Clock::get()?.unix_timestamp as u64;
     governance_provider_data.contract_count = 0;
+    ctx.accounts.provider_data.serving_governance_count += 1;
 
     Ok(())
 }
