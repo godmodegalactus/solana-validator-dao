@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.localnet]
-solana_validator_dao = "AwyKDr1Z5BfdvK3jX1UWopyjsJSV5cq4cuJpoYLofyEn"
+solana_validator_dao = "BC9n2UZZP4vebGeHuMAAnSzeRA5rv3hCoPFqsybLLpQv"
 
 [registry]
 url = "https://anchor.projectserum.com"

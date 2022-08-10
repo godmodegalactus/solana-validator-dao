@@ -9,7 +9,7 @@ mod processors;
 mod errors;
 mod states;
 
-declare_id!("AwyKDr1Z5BfdvK3jX1UWopyjsJSV5cq4cuJpoYLofyEn");
+declare_id!("BC9n2UZZP4vebGeHuMAAnSzeRA5rv3hCoPFqsybLLpQv");
 
 const GOVERNANCE_PROGRAM_ID: Pubkey = pubkey!("GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw");
 
@@ -45,7 +45,8 @@ pub mod solana_validator_dao {
         contract_end_unix_timestamp: u64,
         initial_amount: u64,
         recurring_amount: u64,
-        periodicity: states::PaymentPeriodicity,
+        periodicity: u8,
+        number_of_periods: u32,
     ) -> Result<()> {
         processors::create_governance_contract::process(
             ctx,
@@ -54,7 +55,8 @@ pub mod solana_validator_dao {
             contract_end_unix_timestamp,
             initial_amount,
             recurring_amount,
-            periodicity,
+            periodicity.into(),
+            number_of_periods,
         )
     }
 

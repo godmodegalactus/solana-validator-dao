@@ -14,7 +14,12 @@ pub fn process(
     initial_amount: u64,
     recurring_amount: u64,
     periodicity: PaymentPeriodicity,
+    number_of_periods: u32,
 ) -> Result<()> {
+    if periodicity == PaymentPeriodicity::Unknown {
+        return Err(errors::ValidatorDaoErrors::UnknownPeriodicity.into());
+    }
+
     governance::assert_is_valid_governance(&GOVERNANCE_PROGRAM_ID, &ctx.accounts.governance_ai)?;
 
     let contract = &mut ctx.accounts.governance_contract;
@@ -33,7 +38,12 @@ pub fn process(
     contract.contract_end_timestamp = contract_end_unix_timestamp;
     contract.initial_amount_paid = initial_amount;
     contract.recurring_amount_to_be_paid = recurring_amount;
+    contract.recurring_amount_already_paid = 0;
     contract.periodicity = periodicity;
+    contract.number_of_periods = number_of_periods;
+    contract.contract_end_timestamp = contract_start_unix_timestamp
+        .checked_add(periodicity.to_secs(number_of_periods))
+        .unwrap();
     contract.payment_mint = ctx.accounts.payment_mint.key();
     contract.dao_payment_account = ctx.accounts.token_account.key();
     contract.provider_token_account = ctx.accounts.providers_token_account.key();

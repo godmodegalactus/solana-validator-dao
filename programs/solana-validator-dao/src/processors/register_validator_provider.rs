@@ -27,7 +27,7 @@ pub fn process(
     };
     validator_provider_data.owner = ctx.accounts.owner.key();
     validator_provider_data.services = services;
-    validator_provider_data.rating = 0.0;
+    validator_provider_data.rating = 0;
     validator_provider_data.review_count = 0;
     validator_provider_data.serving_governance_count = 0;
     validator_provider_data.payment_mint = ctx.accounts.payment_mint.key();

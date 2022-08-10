@@ -7,6 +7,11 @@ use spl_governance::state::governance;
 pub fn process(ctx: Context<ExecuteContract>) -> Result<()> {
     governance::assert_is_valid_governance(&GOVERNANCE_PROGRAM_ID, &ctx.accounts.governance_ai)?;
     let contract = &mut ctx.accounts.governance_contract;
+
+    if contract.periodicity == states::PaymentPeriodicity::Unknown {
+        return Err(errors::ValidatorDaoErrors::UnknownPeriodicity.into());
+    }
+
     let clock = &ctx.accounts.clock;
     if contract.contract_start_timestamp < clock.unix_timestamp as u64 {
         return Err(errors::ValidatorDaoErrors::ContractNotYetStarted.into());

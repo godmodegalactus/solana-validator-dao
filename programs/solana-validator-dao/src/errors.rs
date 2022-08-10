@@ -10,6 +10,8 @@ pub enum ValidatorDaoErrors {
     ContractNotYetStarted,
     #[msg("Contract not yet signed by the provider")]
     ContractNotSignedByProvider,
+    #[msg("Unknown periodicity")]
+    UnknownPeriodicity,
     #[msg("default")]
     Default,
 }

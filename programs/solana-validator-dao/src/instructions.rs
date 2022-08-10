@@ -160,7 +160,7 @@ pub struct CreateGovernanceContract<'info> {
 
 #[derive(Accounts)]
 pub struct ExecuteContract<'info> {
-
+    /// CHECK: governance ai / will be checked for valid governance
     #[account(
         constraint = governance_ai.owner.eq( &GOVERNANCE_PROGRAM_ID)
     )]
