@@ -2,16 +2,18 @@ use anchor_lang::prelude::*;
 
 mod instructions;
 use instructions::*;
-use solana_program::pubkey;
 
 mod processors;
 
-mod errors;
-mod states;
-
 declare_id!("AwyKDr1Z5BfdvK3jX1UWopyjsJSV5cq4cuJpoYLofyEn");
-
-const GOVERNANCE_PROGRAM_ID: Pubkey = pubkey!("GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw");
+solana_security_txt::security_txt! {
+    name: "Validator DAO",
+    project_url: "https://github.com/godmodegalactus/solana-validator-dao",
+    contacts: "godmodegalactus@gmail.com",
+    policy: "",
+    preferred_languages: "en",
+    auditors: "Godmode Galactus"
+}
 
 #[program]
 pub mod solana_validator_dao {

@@ -24,3 +24,4 @@ solana-program = "^1.9.6"
 spl-token = { version = "3.1.1", features = ["no-entrypoint"] }
 spl-governance = { version = "2.2.4", features = ["no-entrypoint"] }
 anchor-spl = "0.24.2"
+solana-security-txt = "1.0.1"
