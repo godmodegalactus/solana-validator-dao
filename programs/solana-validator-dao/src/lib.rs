@@ -3,8 +3,6 @@ use anchor_lang::prelude::*;
 mod instructions;
 use instructions::*;
 
-mod processors;
-
 declare_id!("AwyKDr1Z5BfdvK3jX1UWopyjsJSV5cq4cuJpoYLofyEn");
 solana_security_txt::security_txt! {
     name: "Validator DAO",
@@ -21,48 +19,124 @@ pub mod solana_validator_dao {
     use super::*;
 
     pub fn stake(ctx: Context<InitalizeDAOStakeAccount>, seed: u8, lamports: u64) -> Result<()> {
-        processors::process_stake::process(ctx, seed, lamports)
+        let governance_id = &ctx.accounts.governance_id.to_account_info();
+        let governance_program = &ctx.accounts.governance_program.to_account_info();
+        let program_id = ctx.program_id;
+        let stake_program = &ctx.accounts.stake_program.to_account_info();
+
+        // check stake program id
+        assert_eq!(stake_program.key(), solana_program::stake::program::ID);
+        assert_eq!(
+            ctx.accounts.system_program.key(),
+            solana_program::system_program::ID
+        );
+        assert_eq!(
+            ctx.accounts.clock_program.key(),
+            solana_program::sysvar::clock::id()
+        );
+        assert_eq!(
+            ctx.accounts.rent_program.key(),
+            solana_program::sysvar::rent::id()
+        );
+        assert_eq!(
+            ctx.accounts.stake_history.key(),
+            solana_program::sysvar::stake_history::id()
+        );
+        assert_eq!(
+            ctx.accounts.stake_config.key(),
+            solana_program::stake::config::id()
+        );
+        // check governance key match
+        spl_governance::state::governance::assert_is_valid_governance(
+            &governance_program.key(),
+            governance_id,
+        )?;
+
+        let native_treasury = &ctx.accounts.governance_native_treasury_account;
+        assert_eq!(
+            native_treasury.key(),
+            spl_governance::state::native_treasury::get_native_treasury_address(
+                governance_program.key,
+                governance_id.key,
+            )
+        );
+
+        let autorized = solana_program::stake::state::Authorized {
+            staker: native_treasury.key(),
+            withdrawer: native_treasury.key(),
+        };
+
+        let lockup = solana_program::stake::state::Lockup::default();
+
+        let program_seeds = &[
+            b"validator_dao_stake_account",
+            governance_id.key.as_ref(),
+            native_treasury.key.as_ref(),
+            governance_program.key.as_ref(),
+            ctx.accounts.validator_vote_key.key.as_ref(),
+            &[seed],
+        ];
+
+        let (dao_stake_account_pda, stake_account_bump) =
+            Pubkey::find_program_address(program_seeds, program_id);
+
+        assert_eq!(dao_stake_account_pda, ctx.accounts.dao_stake_account.key());
+        let stake_intialize_instructions = solana_program::stake::instruction::create_account(
+            native_treasury.key,
+            &dao_stake_account_pda,
+            &autorized,
+            &lockup,
+            lamports,
+        );
+        assert!(stake_intialize_instructions.len() == 2);
+        let create_account_instruction = &stake_intialize_instructions[0];
+        let initailize_stake_account_instruction = &stake_intialize_instructions[1];
+
+        let signer_seeds = &[
+            b"validator_dao_stake_account",
+            governance_id.key.as_ref(),
+            native_treasury.key.as_ref(),
+            governance_program.key.as_ref(),
+            ctx.accounts.validator_vote_key.key.as_ref(),
+            &[seed],
+            &[stake_account_bump],
+        ];
+        solana_program::program::invoke_signed(
+            create_account_instruction,
+            &[
+                native_treasury.to_account_info().clone(),
+                ctx.accounts.dao_stake_account.to_account_info().clone(),
+            ],
+            &[signer_seeds],
+        )?;
+
+        solana_program::program::invoke(
+            initailize_stake_account_instruction,
+            &[
+                ctx.accounts.dao_stake_account.to_account_info().clone(),
+                ctx.accounts.rent_program.to_account_info(),
+            ],
+        )?;
+
+        let delegate_instruction = solana_program::stake::instruction::delegate_stake(
+            &dao_stake_account_pda,
+            native_treasury.key,
+            ctx.accounts.validator_vote_key.key,
+        );
+        solana_program::program::invoke(
+            &delegate_instruction,
+            &[
+                ctx.accounts.dao_stake_account.to_account_info().clone(),
+                ctx.accounts.validator_vote_key.clone(),
+                ctx.accounts.clock_program.to_account_info().clone(),
+                ctx.accounts.stake_history.to_account_info().clone(),
+                ctx.accounts.stake_config.clone(),
+                ctx.accounts
+                    .governance_native_treasury_account
+                    .to_account_info()
+                    .clone(),
+            ],
+        )?;
+        Ok(())
     }
-
-    // pub fn register_validator_provider(
-    //     ctx: Context<RegisterValidatorServiceProvider>,
-    //     services: u64,
-    //     name: String,
-    //     description: String,
-    // ) -> Result<()> {
-    //     processors::register_validator_provider::process(ctx, services, name, description)
-    // }
-
-    // pub fn add_registered_provider_to_governance(
-    //     ctx: Context<AddRegisteredProviderToGovernance>,
-    // ) -> Result<()> {
-    //     processors::add_registered_provider_to_governance::process(ctx)
-    // }
-
-    // pub fn create_governance_contract(
-    //     ctx: Context<CreateGovernanceContract>,
-    //     _contract_seed: u64,
-    //     services: u64,
-    //     contract_start_unix_timestamp: u64,
-    //     contract_end_unix_timestamp: u64,
-    //     initial_amount: u64,
-    //     recurring_amount: u64,
-    //     periodicity: u8,
-    //     number_of_periods: u32,
-    // ) -> Result<()> {
-    //     processors::create_governance_contract::process(
-    //         ctx,
-    //         services,
-    //         contract_start_unix_timestamp,
-    //         contract_end_unix_timestamp,
-    //         initial_amount,
-    //         recurring_amount,
-    //         periodicity.into(),
-    //         number_of_periods,
-    //     )
-    // }
-
-    // pub fn execute_governance_contract(ctx: Context<ExecuteContract>) -> Result<()> {
-    //     processors::execute_contract::process(ctx)
-    // }
 }

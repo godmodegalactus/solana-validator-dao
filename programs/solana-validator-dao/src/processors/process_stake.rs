@@ -29,11 +29,6 @@ pub fn process(ctx: Context<InitalizeDAOStakeAccount>, seed: u8, lamports: u64) 
         ctx.accounts.stake_config.key(),
         solana_program::stake::config::id()
     );
-    // check governance program id
-    assert_eq!(
-        governance_program.key().to_string(),
-        GOVERNANCE_PROGRAM_ID.to_string()
-    );
     // check governance key match
     spl_governance::state::governance::assert_is_valid_governance(
         &governance_program.key(),

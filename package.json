@@ -10,7 +10,8 @@
         "@solana/spl-token": "^0.2.0",
         "borsh": "^0.7.0",
         "mocha-logger": "^1.0.8",
-        "text-encoding": "^0.7.0"
+        "text-encoding": "^0.7.0",
+        "ts-node": "^10.9.1"
     },
     "devDependencies": {
         "@types/bn.js": "^5.1.0",
