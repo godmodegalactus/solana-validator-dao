@@ -60,7 +60,7 @@ pub struct RegisterValidatorServiceProvider<'info>{
         space = 8 +  size_of::<ValidatorProvider>(),
         payer = owner,
     )]
-    pub provider_data : Box<Account<'info, ValidatorProvider>>,
+    pub provider_data : AccountLoader<'info, ValidatorProvider>,
 
     pub payment_mint : Box<Account<'info, Mint>>,
 
@@ -81,10 +81,9 @@ pub struct AddRegisteredProviderToGovernance<'info> {
     // provider data
     #[account(
         mut,
-        constraint = provider_data.owner == *program_id,
-        constraint = provider_data.is_valid()
+        constraint = provider_data.load()?.owner == *program_id
     )]
-    pub provider_data: Box<Account<'info, ValidatorProvider>>,
+    pub provider_data: AccountLoader<'info, ValidatorProvider>,
 
     #[account(
         init,
@@ -110,16 +109,14 @@ pub struct CreateGovernanceContract<'info> {
 
     #[account(
         mut,
-        constraint = provider_data.owner == *program_id,
-        constraint = provider_data.is_valid()
+        constraint = provider_data.load()?.owner == *program_id
     )]
-    pub provider_data: Box<Account<'info, ValidatorProvider>>,
+    pub provider_data: AccountLoader<'info, ValidatorProvider>,
 
     #[account(mut,
         seeds = [GOVERNANCE_PROVIDER_SEEDS, governance_ai.key().as_ref(), provider_data.key().as_ref()],
         bump,
-        constraint = governance_provider_data.to_account_info().owner == program_id,
-        constraint = governance_provider_data.is_valid()
+        constraint = governance_provider_data.to_account_info().owner == program_id
     )]
     pub governance_provider_data : Box<Account<'info, GovernanceProvider>>,
 
@@ -138,7 +135,7 @@ pub struct CreateGovernanceContract<'info> {
     pub governance_contract : Box<Account<'info, GovernanceContract>>,
 
     #[account(
-        constraint = payment_mint.key() == provider_data.payment_mint,
+        constraint = payment_mint.key() == provider_data.load()?.payment_mint,
     )]
     pub payment_mint : Box<Account<'info, Mint>>,
 
@@ -148,7 +145,7 @@ pub struct CreateGovernanceContract<'info> {
     pub token_account : Box<Account<'info, TokenAccount>>,
 
     #[account(
-        constraint = providers_token_account.owner == provider_data.owner,
+        constraint = providers_token_account.owner == provider_data.load()?.owner,
         constraint = providers_token_account.mint == payment_mint.key(),
     )]
     pub providers_token_account : Box<Account<'info, TokenAccount>>,
@@ -167,14 +164,12 @@ pub struct ExecuteContract<'info> {
     pub governance_ai : AccountInfo<'info>,
 
     #[account(
-        constraint = provider_data.owner == *program_id,
-        constraint = provider_data.is_valid()
+        constraint = provider_data.load()?.owner == *program_id
     )]
-    pub provider_data: Box<Account<'info, ValidatorProvider>>,
+    pub provider_data: AccountLoader<'info, ValidatorProvider>,
 
     #[account(
         constraint = governance_contract.to_account_info().owner == program_id,
-        constraint = governance_contract.is_valid(),
         constraint = governance_contract.validator_provider == provider_data.key(),
         constraint = governance_contract.governance_id == governance_ai.key(),
     )]
@@ -187,7 +182,7 @@ pub struct ExecuteContract<'info> {
     pub token_authority : Signer<'info>,
 
     #[account(
-        constraint = payment_mint.key() == provider_data.payment_mint,
+        constraint = payment_mint.key() == provider_data.load()?.payment_mint,
     )]
     pub payment_mint : Box<Account<'info, Mint>>,
 
@@ -199,7 +194,7 @@ pub struct ExecuteContract<'info> {
     pub token_account : Box<Account<'info, TokenAccount>>,
 
     #[account(
-        constraint = providers_token_account.owner == provider_data.owner,
+        constraint = providers_token_account.owner == provider_data.load()?.owner,
         constraint = providers_token_account.mint == payment_mint.key(),
         constraint = governance_contract.provider_token_account == providers_token_account.key(),
     )]

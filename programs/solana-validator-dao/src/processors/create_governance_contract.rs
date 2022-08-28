@@ -1,5 +1,5 @@
 use crate::{
-    states::{Metadata, PaymentPeriodicity},
+    states::{PaymentPeriodicity},
     *,
 };
 
@@ -22,17 +22,12 @@ pub fn process(
 
     governance::assert_is_valid_governance(&GOVERNANCE_PROGRAM_ID, &ctx.accounts.governance_ai)?;
 
+    let provider_data = ctx.accounts.provider_data.load()?;
     let contract = &mut ctx.accounts.governance_contract;
-
-    contract.meta_data = Metadata {
-        datatype: states::Datatype::Contract,
-        is_initialized: true,
-        reserved: [0; 8],
-    };
     contract.governance_id = ctx.accounts.governance_ai.key();
     contract.contract_creator = ctx.accounts.payer.key();
     contract.validator_provider = ctx.accounts.provider_data.key();
-    contract.validator_provider_owner = ctx.accounts.provider_data.owner;
+    contract.validator_provider_owner = provider_data.owner;
     contract.services_to_be_provided = services;
     contract.contract_start_timestamp = contract_start_unix_timestamp;
     contract.contract_end_timestamp = contract_end_unix_timestamp;

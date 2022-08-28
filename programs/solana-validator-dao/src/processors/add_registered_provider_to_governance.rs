@@ -1,4 +1,4 @@
-use crate::{states::Metadata, *};
+use crate::{*};
 
 use instructions::AddRegisteredProviderToGovernance;
 use spl_governance::state::governance;
@@ -16,18 +16,14 @@ pub fn process(ctx: Context<AddRegisteredProviderToGovernance>) -> Result<()> {
         ctx.accounts.governance_native_treasury.key()
     );
 
+    let provider_data = &mut ctx.accounts.provider_data.load_mut()?;
     let governance_provider_data = &mut ctx.accounts.governance_provider_data;
-    governance_provider_data.meta_data = Metadata {
-        datatype: states::Datatype::GovernaceProvider,
-        is_initialized: true,
-        reserved: [0; 8],
-    };
     governance_provider_data.governance_id = ctx.accounts.governance_ai.key();
     governance_provider_data.validator_provider = ctx.accounts.provider_data.key();
-    governance_provider_data.validator_provider_owner = ctx.accounts.provider_data.owner.key();
+    governance_provider_data.validator_provider_owner = provider_data.owner.key();
     governance_provider_data.added_timestamp = Clock::get()?.unix_timestamp as u64;
     governance_provider_data.contract_count = 0;
-    ctx.accounts.provider_data.serving_governance_count += 1;
+    provider_data.serving_governance_count += 1;
 
     Ok(())
 }

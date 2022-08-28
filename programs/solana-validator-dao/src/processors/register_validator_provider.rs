@@ -1,6 +1,5 @@
 use crate::{
     errors::ValidatorDaoErrors,
-    states::{Datatype, Metadata},
     *,
 };
 use instructions::RegisterValidatorServiceProvider;
@@ -19,12 +18,7 @@ pub fn process(
     if description.len() > 1024 {
         return Err(ValidatorDaoErrors::DescriptionTooLarge.into());
     }
-    let validator_provider_data = &mut ctx.accounts.provider_data;
-    validator_provider_data.meta_data = Metadata {
-        datatype: Datatype::ValidatorProvider,
-        is_initialized: true,
-        reserved: [0; 8],
-    };
+    let validator_provider_data = &mut ctx.accounts.provider_data.load_init()?;
     validator_provider_data.owner = ctx.accounts.owner.key();
     validator_provider_data.services = services;
     validator_provider_data.rating = 0;

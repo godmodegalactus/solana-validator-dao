@@ -8,13 +8,6 @@ const PROVIDES_RENTING_OF_VALIDATORS: u64 = 1 << 3;
 const PROVIDES_CONFIGURING_A_SERVICE_FOR_VALIDATOR: u64 = 1 << 4;
 const PROVIDES_SOLVING_ISSUES_FOR_VALIDATOR: u64 = 1 << 5;
 
-#[derive(AnchorSerialize, AnchorDeserialize, Copy, Clone, PartialEq, Eq)]
-#[repr(u8)]
-pub enum Datatype {
-    ValidatorProvider,
-    GovernaceProvider,
-    Contract,
-}
 
 #[derive(AnchorSerialize, AnchorDeserialize, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
@@ -63,17 +56,9 @@ impl PaymentPeriodicity {
     }
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Copy, Clone, PartialEq, Eq)]
-pub struct Metadata {
-    pub datatype: Datatype,
-    pub is_initialized: bool,
-    pub reserved: [u8; 8],
-}
-
 // This struct represents validator provider and its details
-#[account()]
+#[account(zero_copy)]
 pub struct ValidatorProvider {
-    pub meta_data: Metadata,
     pub owner: Pubkey,
     pub payment_mint: Pubkey,
     pub services: u64,
@@ -81,13 +66,12 @@ pub struct ValidatorProvider {
     pub review_count: u32,
     pub serving_governance_count: u32, // how many governances provider is serving
     pub name: [u8; 128],
-    pub description: [u8; 1024],
+    pub description: [u8; 2048],
     pub reserved: [u8; 256],
 }
 
 #[account()]
 pub struct GovernanceProvider {
-    pub meta_data: Metadata,
     pub governance_id: Pubkey,
     pub validator_provider: Pubkey,
     pub validator_provider_owner: Pubkey,
@@ -97,7 +81,6 @@ pub struct GovernanceProvider {
 
 #[account()]
 pub struct GovernanceContract {
-    pub meta_data: Metadata,
     pub governance_id: Pubkey,
     pub contract_creator: Pubkey,
     pub validator_provider: Pubkey,
@@ -116,24 +99,4 @@ pub struct GovernanceContract {
     pub has_signed_by_provider: bool,
     pub executed: bool,
     pub reserved: [u8; 256],
-}
-
-impl ValidatorProvider {
-    pub fn is_valid(&self) -> bool {
-        self.meta_data.datatype == Datatype::ValidatorProvider
-            && self.meta_data.is_initialized == true
-    }
-}
-
-impl GovernanceProvider {
-    pub fn is_valid(&self) -> bool {
-        self.meta_data.datatype == Datatype::GovernaceProvider
-            && self.meta_data.is_initialized == true
-    }
-}
-
-impl GovernanceContract {
-    pub fn is_valid(&self) -> bool {
-        self.meta_data.datatype == Datatype::Contract && self.meta_data.is_initialized == true
-    }
 }
