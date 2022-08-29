@@ -53,13 +53,6 @@ pub mod solana_validator_dao {
         )?;
 
         let native_treasury = &ctx.accounts.governance_native_treasury_account;
-        assert_eq!(
-            native_treasury.key(),
-            spl_governance::state::native_treasury::get_native_treasury_address(
-                governance_program.key,
-                governance_id.key,
-            )
-        );
 
         let autorized = solana_program::stake::state::Authorized {
             staker: native_treasury.key(),
